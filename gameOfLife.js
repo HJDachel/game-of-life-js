@@ -15,7 +15,7 @@ let continueAnimation = true;
 
 let game;
 
-const gameBoardSize = 25;
+let gameBoardSize = 25;
 
 /** BEGIN CLASS DEFS (ES6 classes can't be hoisted) */
 
@@ -78,9 +78,12 @@ window.onload = () => {
     startButton = $("#startButton");
     stopButton = $("#stopButton");
 
-    const board = init(gameBoardSize);
+    drawGridLines(ctx);
+
+    let board = init(gameBoardSize);
     const rule = [2, 3, 3]; //rule[0] & rule[1] for living cells, rule[2] for dead cells.
     game = new Game(board, rule);
+
 
     /** Blinker (oscillator) */
     // game.gameBoard[12][12] = 1;
@@ -88,11 +91,11 @@ window.onload = () => {
     // game.gameBoard[14][12] = 1;
 
     /** Glider (spaceship) */
-    game.gameBoard[1][1] = 1
-    game.gameBoard[2][2] = 1
-    game.gameBoard[3][2] = 1
-    game.gameBoard[3][1] = 1
-    game.gameBoard[3][0] = 1
+    // game.gameBoard[1][1] = 1
+    // game.gameBoard[2][2] = 1
+    // game.gameBoard[3][2] = 1
+    // game.gameBoard[3][1] = 1
+    // game.gameBoard[3][0] = 1
 
 
     /** Block (still life) */
@@ -101,9 +104,14 @@ window.onload = () => {
     // game.gameBoard[6][5] = 1;
     // game.gameBoard[6][6] = 1;
 
+
+    canvas.addEventListener('mousedown', function (e) {
+        getCursorPosition(canvas, e)
+    })
+
     //start button is pressed
     startButton.click(() => {
-        continueAnimation = true; 
+        continueAnimation = true;
         requestAnimationFramePID = window.requestAnimationFrame(gameLoop);
     });
 
@@ -111,6 +119,8 @@ window.onload = () => {
         continueAnimation = false;
         setTimeout(() => {
             clearCanvas();
+            game.gameBoard = init(gameBoardSize);
+            drawGridLines(ctx);
         }, 250);
         // clearCanvas();
     });
@@ -121,7 +131,7 @@ window.onload = () => {
 /** draws a 40x40 rectangle at the specified x and y */
 const drawLiveRect = (x, y) => {
     ctx.fillStyle = "#9cd9c1";
-    ctx.fillRect(x + 0.5, y + 0.5, 40, 40);
+    ctx.fillRect(x + 0.5, y + 0.5, canvasHeight / gameBoardSize, canvasWidth / gameBoardSize);
 };
 
 
@@ -153,6 +163,7 @@ const drawBoard = (board) => {
 
 /** clears the entire canvas */
 const clearCanvas = () => {
+    console.log("Call to clearCanvas()");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -160,6 +171,7 @@ const clearCanvas = () => {
 const gameLoop = () => {
     setTimeout(() => {
         clearCanvas();
+        drawGridLines(ctx);
         drawBoard(game.gameBoard);
         game.nextIter();
         if (continueAnimation) {
@@ -168,3 +180,35 @@ const gameLoop = () => {
     }, 1000 / FPS);
 
 };
+
+/** get position of cursor relative to canvas element. Adapted from : 
+ * https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/*/
+const getCursorPosition = (canvas, e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setCellState(x, y);
+};
+
+const setCellState = (canvasX, canvasY) => {
+    clearCanvas();
+    yIndex = Math.floor((canvasY / canvasHeight) * gameBoardSize);
+    xIndex = Math.floor((canvasX / canvasWidth) * gameBoardSize);
+    game.gameBoard[yIndex][xIndex] = !game.gameBoard[yIndex][xIndex];
+    drawGridLines(ctx);
+    drawBoard(game.gameBoard);
+};
+
+const drawGridLines = (ctx) => {
+    for (var x = (canvasWidth / gameBoardSize); x <= canvasWidth; x += (canvasWidth / gameBoardSize)) {
+        ctx.moveTo(0.5 + x + p, p);
+        ctx.lineTo(0.5 + x + p, canvasHeight + p);
+    }
+
+    for (var x = (canvasWidth / gameBoardSize); x <= canvasHeight; x += (canvasHeight / gameBoardSize)) {
+        ctx.moveTo(p, 0.5 + x + p);
+        ctx.lineTo(canvasWidth + p, 0.5 + x + p);
+    }
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+}
